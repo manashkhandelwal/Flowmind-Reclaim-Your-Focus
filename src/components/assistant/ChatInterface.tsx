@@ -31,7 +31,7 @@ export default function ChatInterface({ messages, onSendMessage, onClearHistory,
     }
   }, [messages, isTyping]);
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
@@ -81,7 +81,7 @@ export default function ChatInterface({ messages, onSendMessage, onClearHistory,
       {/* Bubble messages display */}
       <div
         ref={scrollRef}
-        className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[380px] bg-[#0A0B0F]/45"
+        className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#0A0B0F]/45"
         id="bubble-scroll-box"
       >
         {messages.map((m) => {

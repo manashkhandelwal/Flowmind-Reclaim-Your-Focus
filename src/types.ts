@@ -1,6 +1,13 @@
-export type TaskCategory = 'interview' | 'assignment' | 'meeting' | 'bill' | 'certification' | 'project' | 'other';
-export type Priority = 'critical' | 'high' | 'medium' | 'low';
-export type TaskStatus = 'active' | 'completed' | 'backlog';
+export type TaskCategory =
+  | "interview"
+  | "assignment"
+  | "meeting"
+  | "bill"
+  | "certification"
+  | "project"
+  | "other";
+export type Priority = "critical" | "high" | "medium" | "low";
+export type TaskStatus = "active" | "completed" | "backlog";
 
 export interface Subtask {
   id: string;
@@ -17,14 +24,14 @@ export interface ScheduleBlock {
   endTime: string;
   objective: string;
   milestones: string[];
-  type: 'focus' | 'review' | 'preparation' | 'buffer';
+  type: "focus" | "review" | "preparation" | "buffer";
 }
 
 export interface Task {
   id: string;
   title: string;
   description: string;
-  source: 'gmail' | 'calendar' | 'drive' | 'manual' | 'agent';
+  source: "gmail" | "calendar" | "drive" | "manual" | "agent" | "user_query";
   sourceRefId: string | null;
   category: TaskCategory;
   priority: Priority;
@@ -32,7 +39,7 @@ export interface Task {
   deadline: string;
   estimatedMinutes: number;
   riskScore: number;
-  riskLevel: 'safe' | 'at_risk' | 'high_risk';
+  riskLevel: "safe" | "at_risk" | "high_risk";
   riskReason: string;
   riskUpdatedAt: string;
   confidenceScore: number;
@@ -41,6 +48,10 @@ export interface Task {
   createdAt: string;
   completedAt: string | null;
   userId?: string;
+  /** Google Calendar event ID — set after a Calendar sync so future saves update rather than recreate */
+  calendarEventId?: string;
+  /** Google Calendar ID (usually "primary") */
+  calendarId?: string;
 }
 
 export interface Goal {
@@ -53,8 +64,18 @@ export interface Goal {
   relatedTaskIds: string[];
 }
 
-export type AgentType = 'orchestrator' | 'ingestion' | 'risk' | 'scheduler' | 'coach';
-export type OrchestratorTriggerType = 'initial_sync' | 'gmail_scan' | 'task_change' | 'daily_briefing';
+export type AgentType =
+  | "orchestrator"
+  | "ingestion"
+  | "risk"
+  | "scheduler"
+  | "coach";
+
+export type OrchestratorTriggerType =
+  | "initial_sync"
+  | "gmail_scan"
+  | "task_change"
+  | "daily_briefing";
 
 export interface AgentRunLog {
   id: string;
@@ -83,7 +104,7 @@ export interface AppBriefing {
 
 export interface Message {
   id: string;
-  sender: 'user' | 'coach';
+  sender: "user" | "coach";
   text: string;
   timestamp: string;
 }
@@ -91,8 +112,32 @@ export interface Message {
 export interface FocusSession {
   taskId: string;
   objective: string;
-  status: 'active' | 'completed' | 'paused' | 'abandoned';
+  status: "active" | "completed" | "paused" | "abandoned";
   startTime: string;
   durationMinutes: number;
   elapsedSeconds: number;
+}
+export interface ApiStatus {
+  active: boolean;
+  simulation: boolean;
+  keyConfigured: boolean;
+}
+export interface AppUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string;
+  /** True after first-login onboarding has completed. Mirrors the Firestore field. */
+  onboardingCompleted: boolean;
+}
+
+export interface OrchestrationState {
+  running: boolean;
+  step: string;
+  completedLogs: string[];
+}
+
+export interface SchedulerDraftState {
+  blocks: ScheduleBlock[] | null;
+  alert: string | null;
 }

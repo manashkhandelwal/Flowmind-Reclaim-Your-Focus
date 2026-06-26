@@ -1,16 +1,33 @@
 import { db } from "../lib/firebase";
-import { doc, collection, setDoc, getDocs, deleteDoc, writeBatch, query, where, getDoc } from "firebase/firestore";
+import {
+  doc,
+  collection,
+  setDoc,
+  getDocs,
+  deleteDoc,
+  writeBatch,
+  query,
+  where,
+  getDoc,
+} from "firebase/firestore";
 import { Task, Goal, Message } from "../types";
 
 // Setup typed Firestore helpers
-export async function saveUserToFirestore(uid: string, profile: { email: string; displayName: string; photoURL: string }) {
+export async function saveUserToFirestore(
+  uid: string,
+  profile: { email: string; displayName: string; photoURL: string },
+) {
   try {
     const userDocRef = doc(db, "users", uid);
-    await setDoc(userDocRef, {
-      ...profile,
-      uid,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    await setDoc(
+      userDocRef,
+      {
+        ...profile,
+        uid,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
     console.log(`Firestore: Saved user profile for ${uid}`);
   } catch (err) {
     console.error("Firestore: Error saving user profile:", err);
@@ -35,10 +52,14 @@ export async function fetchTasksFromFirestore(userId: string): Promise<Task[]> {
 export async function saveTaskToFirestore(userId: string, task: Task) {
   try {
     const docRef = doc(db, "tasks", task.id);
-    await setDoc(docRef, {
-      ...task,
-      userId
-    }, { merge: true });
+    await setDoc(
+      docRef,
+      {
+        ...task,
+        userId,
+      },
+      { merge: true },
+    );
     console.log(`Firestore: Saved task ${task.id}`);
   } catch (err) {
     console.error("Firestore: Error saving task:", err);
@@ -72,24 +93,36 @@ export async function fetchGoalsFromFirestore(userId: string): Promise<Goal[]> {
 export async function saveGoalToFirestore(userId: string, goal: Goal) {
   try {
     const docRef = doc(db, "goals", goal.id);
-    await setDoc(docRef, {
-      ...goal,
-      userId
-    }, { merge: true });
+    await setDoc(
+      docRef,
+      {
+        ...goal,
+        userId,
+      },
+      { merge: true },
+    );
   } catch (err) {
     console.error("Firestore: Error saving goal:", err);
   }
 }
 
-export async function fetchMessagesFromFirestore(userId: string): Promise<Message[]> {
+export async function fetchMessagesFromFirestore(
+  userId: string,
+): Promise<Message[]> {
   try {
-    const q = query(collection(db, "conversations"), where("userId", "==", userId));
+    const q = query(
+      collection(db, "conversations"),
+      where("userId", "==", userId),
+    );
     const snapshot = await getDocs(q);
     const result: Message[] = [];
     snapshot.forEach((d) => {
       result.push(d.data() as Message);
     });
-    result.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    result.sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
     return result;
   } catch (err) {
     console.error("Firestore: Error fetching messages:", err);
@@ -100,10 +133,14 @@ export async function fetchMessagesFromFirestore(userId: string): Promise<Messag
 export async function saveMessageToFirestore(userId: string, msg: Message) {
   try {
     const docRef = doc(db, "conversations", msg.id);
-    await setDoc(docRef, {
-      ...msg,
-      userId
-    }, { merge: true });
+    await setDoc(
+      docRef,
+      {
+        ...msg,
+        userId,
+      },
+      { merge: true },
+    );
   } catch (err) {
     console.error("Firestore: Error saving message:", err);
   }
@@ -111,7 +148,10 @@ export async function saveMessageToFirestore(userId: string, msg: Message) {
 
 export async function clearConversationsInFirestore(userId: string) {
   try {
-    const q = query(collection(db, "conversations"), where("userId", "==", userId));
+    const q = query(
+      collection(db, "conversations"),
+      where("userId", "==", userId),
+    );
     const snapshot = await getDocs(q);
     const batch = writeBatch(db);
     snapshot.forEach((doc) => {
@@ -120,5 +160,31 @@ export async function clearConversationsInFirestore(userId: string) {
     await batch.commit();
   } catch (err) {
     console.error("Firestore: Error clearing conversations:", err);
+  }
+}
+export async function getUserOnboardingStatus(uid: string): Promise<boolean> {
+  try {
+    const userDocRef = doc(db, "users", uid);
+    const snap = await getDoc(userDocRef);
+    if (!snap.exists()) return false;
+    return snap.data()?.onboardingCompleted ?? false;
+  } catch (err) {
+    console.error("Firestore: Error reading onboarding status:", err);
+    // Fail-safe: return true so we never accidentally re-run onboarding on error
+    return true;
+  }
+}
+
+/**
+ * Sets onboardingCompleted = true on the user document.
+ * Safe to call multiple times (merge: true).
+ */
+export async function markOnboardingComplete(uid: string): Promise<void> {
+  try {
+    const userDocRef = doc(db, "users", uid);
+    await setDoc(userDocRef, { onboardingCompleted: true }, { merge: true });
+    console.log(`Firestore: Onboarding marked complete for ${uid}`);
+  } catch (err) {
+    console.error("Firestore: Error marking onboarding complete:", err);
   }
 }

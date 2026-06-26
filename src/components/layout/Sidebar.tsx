@@ -11,19 +11,17 @@ import {
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 interface SidebarProps {
-  currentView: string;
-  onViewChange: (view: string) => void;
   logsCount: number;
   tasksCount: number;
   focusedTaskActive: boolean;
+  user: any
 }
 
 export default function Sidebar({
-  currentView,
-  onViewChange,
   logsCount,
   tasksCount,
   focusedTaskActive,
+  user
 }: SidebarProps) {
   const menuItems = [
     { id: "dashboard", label: "Executive Desk", icon: LayoutDashboard },
@@ -47,7 +45,12 @@ export default function Sidebar({
       badge: logsCount > 0 ? logsCount : undefined,
     },
   ];
-
+  const initials = user.displayName
+    .split(" ")
+    .map(name => name[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
   return (
     <aside
       className="hidden md:flex w-64 border-r border-[#1E2330] bg-[#111318] flex-col justify-between h-[calc(100vh-4rem)] text-slate-350 sticky left-0 shrink-0"
@@ -61,26 +64,30 @@ export default function Sidebar({
           <nav className="mt-2 flex flex-col gap-1" id="sidebar-nav">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const isActive = currentView === item.id;
+              const isActive =
+                item.id === "dashboard"
+                  ? location.pathname === "/" ||
+                  location.pathname === "/dashboard"
+                  : location.pathname === `/${item.id}`;
               return (
-                <button
+                <NavLink
                   key={item.id}
-                  onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
-                    isActive
+                  to={`/${item.id}`}
+                  className={({ isActive }) =>
+                    `w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group 
+                  ${isActive
                       ? "bg-[#4F8EF7]/10 text-[#4F8EF7] border-l-2 border-[#4F8EF7]"
                       : "text-slate-400 hover:bg-[#181C27] hover:text-white"
-                  }`}
-                  id={`nav-item-${item.id}`}
+                    }`
+                  }
                 >
                   <div className="flex items-center gap-2.5">
                     <Icon
                       size={16}
-                      className={`${
-                        isActive
-                          ? "text-[#4F8EF7]"
-                          : "text-slate-400 group-hover:text-slate-200"
-                      } ${item.isPulse ? "animate-pulse text-[#F04438]" : ""}`}
+                      className={`${isActive
+                        ? "text-[#4F8EF7]"
+                        : "text-slate-400 group-hover:text-slate-200"
+                        } ${item.isPulse ? "animate-pulse text-[#F04438]" : ""}`}
                     />
                     <span>{item.label}</span>
                   </div>
@@ -89,7 +96,7 @@ export default function Sidebar({
                       {item.badge}
                     </span>
                   )}
-                </button>
+                </NavLink>
               );
             })}
           </nav>
@@ -135,14 +142,14 @@ export default function Sidebar({
       <div className="p-4 border-t border-[#1E2330] bg-[#0A0B0F]/50">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-full bg-[#7C6AF7]/25 border border-[#7C6AF7]/40 flex items-center justify-center font-bold text-[#7C6AF7] font-mono text-xs">
-            FM
+            {initials}
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-200 truncate">
-              Workspace User
+              {user?.displayName}
             </p>
             <p className="text-[10px] text-slate-500 font-mono truncate">
-              manash@flowmind.ai
+              {user?.email}
             </p>
           </div>
         </div>

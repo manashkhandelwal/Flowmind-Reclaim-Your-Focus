@@ -3,9 +3,25 @@ import { Plus, Trash2, Calendar, Clock, AlertTriangle, CheckCircle2, ChevronDown
 import { Task, Subtask, TaskCategory, Priority, TaskStatus } from "../../types";
 import { motion } from "motion/react";
 
+const toLocalDateLocalString = (isoString: string) => {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return "";
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+};
+
 interface TaskListProps {
   tasks: Task[];
-  onSaveTask: (task: Partial<Task>) => void;
+  onSaveTask: (task: Partial<Task>) => void | Promise<void>;
   onDeleteTask: (taskId: string) => void;
   selectedTaskId?: string;
   onSelectTask: (taskId: string) => void;
@@ -28,14 +44,19 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
 
   // For editing custom descriptions, deadlines, estimated effort
   const [effortMinutesDraft, setEffortMinutesDraft] = useState<string>("");
+  const [deadlineDraft, setDeadlineDraft] = useState<string>("");
+  const [isSavingFocusBudget, setIsSavingFocusBudget] = useState(false);
+  const [isSavingDeadline, setIsSavingDeadline] = useState(false);
   const [newSubtaskTextMap, setNewSubtaskTextMap] = useState<Record<string, string>>({});
 
   React.useEffect(() => {
     const selectedTask = tasks.find(t => t.id === selectedTaskId);
     if (selectedTask) {
       setEffortMinutesDraft(String(selectedTask.estimatedMinutes));
+      setDeadlineDraft(toLocalDateLocalString(selectedTask.deadline));
     } else {
       setEffortMinutesDraft("");
+      setDeadlineDraft("");
     }
   }, [selectedTaskId, tasks]);
 
@@ -86,10 +107,30 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
     setIsCreating(false);
   };
 
-  const handleSaveEffortMinutes = (task: Task) => {
+  const handleSaveEffortMinutes = async (task: Task) => {
     const val = Number(effortMinutesDraft);
     if (!isNaN(val) && val > 0) {
-      onSaveTask({ id: task.id, estimatedMinutes: val });
+      setIsSavingFocusBudget(true);
+      try {
+        await onSaveTask({ id: task.id, estimatedMinutes: val });
+      } catch (err) {
+        console.error("Failed to save focus budget:", err);
+      } finally {
+        setIsSavingFocusBudget(false);
+      }
+    }
+  };
+
+  const handleSaveDeadline = async (task: Task) => {
+    if (deadlineDraft) {
+      setIsSavingDeadline(true);
+      try {
+        await onSaveTask({ id: task.id, deadline: new Date(deadlineDraft).toISOString() });
+      } catch (err) {
+        console.error("Failed to save deadline:", err);
+      } finally {
+        setIsSavingDeadline(false);
+      }
     }
   };
 
@@ -121,17 +162,15 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
             <div className="flex bg-[#0A0B0F] p-1 rounded-lg border border-[#1E2330]">
               <button
                 onClick={() => setActiveTab("active")}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  activeTab === "active" ? "bg-[#181C27] text-white" : "text-slate-400 hover:text-white"
-                }`}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${activeTab === "active" ? "bg-[#181C27] text-white" : "text-slate-400 hover:text-white"
+                  }`}
               >
                 Active Backlog
               </button>
               <button
                 onClick={() => setActiveTab("completed")}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  activeTab === "completed" ? "bg-[#181C27] text-white" : "text-slate-400 hover:text-white"
-                }`}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${activeTab === "completed" ? "bg-[#181C27] text-white" : "text-slate-400 hover:text-white"
+                  }`}
               >
                 Completed Tasks
               </button>
@@ -155,7 +194,7 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
               onChange={(e) => setSearch(e.target.value)}
               className="bg-[#0A0B0F] border border-[#1E2330] text-xs text-slate-200 rounded-lg p-2 focus:outline-none focus:border-[#4F8EF7]"
             />
-            
+
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
@@ -187,7 +226,7 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
         {isCreating && (
           <form onSubmit={handleManualCreate} className="border border-[#1E2330] rounded-xl bg-[#111318] p-5 space-y-4 animate-fadeIn">
             <h3 className="text-xs font-mono font-bold text-[#4F8EF4] uppercase tracking-wider">Log Custom Obligation</h3>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-slate-400 font-medium">Task Title *</label>
@@ -305,9 +344,8 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                 <div
                   key={t.id}
                   onClick={() => onSelectTask(t.id)}
-                  className={`border rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden bg-[#111318] hover:border-[#4F8EF7]/40 ${
-                    isSelected ? "border-[#4F8EF7] shadow-lg shadow-[#4F8EF7]/5 bg-[#181C27]/50" : "border-[#1E2330]"
-                  } ${t.riskLevel === "high_risk" && t.status !== "completed" ? "border-l-4 border-l-[#F04438]" : ""}`}
+                  className={`border rounded-xl p-4 transition-all cursor-pointer relative overflow-hidden bg-[#111318] hover:border-[#4F8EF7]/40 ${isSelected ? "border-[#4F8EF7] shadow-lg shadow-[#4F8EF7]/5 bg-[#181C27]/50" : "border-[#1E2330]"
+                    } ${t.riskLevel === "high_risk" && t.status !== "completed" ? "border-l-4 border-l-[#F04438]" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
@@ -336,11 +374,10 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
 
                     {/* Risk Badge stats metrics */}
                     {t.status !== "completed" && (
-                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
-                        t.riskLevel === "high_risk" ? "bg-[#F04438]/10 text-[#F04438]" :
-                        t.riskLevel === "at_risk" ? "bg-[#F5A623]/10 text-[#F5A623]" :
-                        "bg-[#34C77B]/10 text-[#34C77B]"
-                      }`}>
+                      <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded uppercase ${t.riskLevel === "high_risk" ? "bg-[#F04438]/10 text-[#F04438]" :
+                          t.riskLevel === "at_risk" ? "bg-[#F5A623]/10 text-[#F5A623]" :
+                            "bg-[#34C77B]/10 text-[#34C77B]"
+                        }`}>
                         risk:{t.riskScore}
                       </span>
                     )}
@@ -368,15 +405,14 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                     </div>
                     <div className="h-1.5 w-full bg-[#0A0B0F] rounded-full overflow-hidden border border-[#1E2330]/50">
                       <motion.div
-                        className={`h-full rounded-full ${
-                          completionPercent === 100
+                        className={`h-full rounded-full ${completionPercent === 100
                             ? "bg-[#34C77B]"
                             : t.riskLevel === "high_risk" && t.status !== "completed"
                               ? "bg-[#F04438]"
                               : t.riskLevel === "at_risk" && t.status !== "completed"
                                 ? "bg-[#F5A623]"
                                 : "bg-[#4F8EF7]"
-                        }`}
+                          }`}
                         initial={{ width: "0%" }}
                         animate={{ width: `${completionPercent}%` }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
@@ -395,7 +431,7 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                       <div className="flex items-center gap-1.5 bg-[#0A0B0F] p-1 px-2 rounded border border-[#1E2330]/50">
                         <Calendar size={11} className="text-[#4F8EF7]" />
                         <span>
-                          {hoursLeft < 0 ? "Overdue" : hoursLeft < 24 ? `${hoursLeft}h left` : `${Math.round(hoursLeft/24)}d left`}
+                          {hoursLeft < 0 ? "Overdue" : hoursLeft < 24 ? `${hoursLeft}h left` : `${Math.round(hoursLeft / 24)}d left`}
                         </span>
                       </div>
 
@@ -408,7 +444,7 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
 
                     <div className="flex items-center gap-2">
                       <span className="bg-[#0A0B0F] py-0.5 px-1.5 rounded text-slate-400 uppercase tracking-widest text-[8px] font-bold border border-[#1E2330]/40">
-                        src: {t.source}
+                        src: Manual Input
                       </span>
                     </div>
                   </div>
@@ -443,11 +479,10 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                     <span className="text-[9px] font-mono font-bold bg-[#181C27] text-slate-300 border border-[#1E2330] p-0.5 px-1.5 rounded uppercase">
                       {selectedTask.category}
                     </span>
-                    <span className={`text-[9px] font-mono font-bold p-0.5 px-1.5 rounded uppercase ${
-                      selectedTask.priority === "critical" ? "bg-[#F04438]/10 text-[#F04438]" :
-                      selectedTask.priority === "high" ? "bg-[#F5A623]/10 text-[#F5A623]" :
-                      "bg-[#4F8EF7]/10 text-[#4F8EF7]"
-                    }`}>
+                    <span className={`text-[9px] font-mono font-bold p-0.5 px-1.5 rounded uppercase ${selectedTask.priority === "critical" ? "bg-[#F04438]/10 text-[#F04438]" :
+                        selectedTask.priority === "high" ? "bg-[#F5A623]/10 text-[#F5A623]" :
+                          "bg-[#4F8EF7]/10 text-[#4F8EF7]"
+                      }`}>
                       {selectedTask.priority}
                     </span>
                   </div>
@@ -481,11 +516,40 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                   />
                   <button
                     onClick={() => handleSaveEffortMinutes(selectedTask)}
-                    disabled={Number(effortMinutesDraft) === selectedTask.estimatedMinutes || !effortMinutesDraft || isNaN(Number(effortMinutesDraft))}
+                    disabled={isSavingFocusBudget || Number(effortMinutesDraft) === selectedTask.estimatedMinutes || !effortMinutesDraft || isNaN(Number(effortMinutesDraft))}
                     className="bg-[#181C27] hover:bg-[#1E2330] border border-[#1E2330] text-slate-300 text-xs px-3 py-2 rounded-lg flex items-center gap-1 transition-all disabled:opacity-40"
                   >
-                    <Save size={12} />
-                    Apply Focus Budget
+                    {isSavingFocusBudget ? (
+                      <RefreshCw size={12} className="animate-spin text-slate-400" />
+                    ) : (
+                      <Save size={12} />
+                    )}
+                    {isSavingFocusBudget ? "Applying..." : "Apply Focus Budget"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Adjust deadline date */}
+              <div className="space-y-2">
+                <label className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">Target Deadline</label>
+                <div className="flex gap-2">
+                  <input
+                    type="datetime-local"
+                    value={deadlineDraft}
+                    onChange={(e) => setDeadlineDraft(e.target.value)}
+                    className="bg-[#0A0B0F] border border-[#1E2330] text-xs text-slate-200 rounded-lg p-2 flex-grow focus:outline-none focus:border-[#4F8EF7]"
+                  />
+                  <button
+                    onClick={() => handleSaveDeadline(selectedTask)}
+                    disabled={isSavingDeadline || deadlineDraft === toLocalDateLocalString(selectedTask.deadline) || !deadlineDraft}
+                    className="bg-[#181C27] hover:bg-[#1E2330] border border-[#1E2330] text-slate-300 text-xs px-3 py-2 rounded-lg flex items-center gap-1 transition-all disabled:opacity-40"
+                  >
+                    {isSavingDeadline ? (
+                      <RefreshCw size={12} className="animate-spin text-slate-400" />
+                    ) : (
+                      <Save size={12} />
+                    )}
+                    {isSavingDeadline ? "Saving..." : "Apply Deadline"}
                   </button>
                 </div>
               </div>
@@ -495,7 +559,7 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                 <label className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                   Decomposed Action Milestones ({selectedTask.subtasks.filter(s => s.done).length}/{selectedTask.subtasks.length})
                 </label>
-                
+
                 <div className="space-y-1.5 max-h-[160px] overflow-y-auto">
                   {selectedTask.subtasks.map(st => (
                     <div
@@ -522,6 +586,12 @@ export default function TaskList({ tasks, onSaveTask, onDeleteTask, selectedTask
                     placeholder="Decompose further..."
                     value={currentSubtaskText}
                     onChange={(e) => setNewSubtaskTextMap({ ...newSubtaskTextMap, [selectedTask.id]: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddSubtask(selectedTask);
+                      }
+                    }}
                     className="bg-[#0A0B0F] border border-[#1E2330] text-xs text-slate-200 rounded-lg p-2.5 flex-grow focus:outline-none focus:border-[#4F8EF7]"
                   />
                   <button

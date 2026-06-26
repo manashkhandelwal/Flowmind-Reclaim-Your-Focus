@@ -11,14 +11,14 @@ interface FocusSessionTimerProps {
 
 export default function FocusSessionTimer({ tasks, activeTaskId, onSelectTaskId, onToggleSubtask }: FocusSessionTimerProps) {
   const activeTask = tasks.find(t => t.id === activeTaskId);
-  
+
   // Timer states
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [soundscape, setSoundscape] = useState<"none" | "rain" | "waves" | "noise">("none");
   const [sessionCompleted, setSessionCompleted] = useState(false);
-  
+
   // Ref for timer
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -131,7 +131,7 @@ export default function FocusSessionTimer({ tasks, activeTaskId, onSelectTaskId,
           <div className="text-5xl font-mono font-bold text-white tracking-widest pl-1">
             {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
           </div>
-          
+
           <div className="text-[10px] uppercase font-mono font-bold text-slate-500 tracking-widest mt-2">
             {isRunning ? "DEEP CONCENTRATION" : sessionCompleted ? "SESSION COMPLETED!" : "PAUSED"}
           </div>
@@ -157,11 +157,10 @@ export default function FocusSessionTimer({ tasks, activeTaskId, onSelectTaskId,
 
           <button
             onClick={handleStartStop}
-            className={`p-4 px-8 rounded-full text-xs font-bold font-mono tracking-wider transition-all shadow-lg flex items-center gap-2 ${
-              isRunning
+            className={`p-4 px-8 rounded-full text-xs font-bold font-mono tracking-wider transition-all shadow-lg flex items-center gap-2 ${isRunning
                 ? "bg-[#F04438] hover:bg-[#F04438]/90 text-white"
                 : "bg-[#34C77B] hover:bg-[#34C77B]/95 text-[#0A0B0F]"
-            }`}
+              }`}
           >
             {isRunning ? (
               <>
@@ -177,28 +176,8 @@ export default function FocusSessionTimer({ tasks, activeTaskId, onSelectTaskId,
           </button>
         </div>
 
-        {/* Soundscape presets selection row */}
-        <div className="w-full border-t border-[#1E2330]/40 mt-8 pt-5 z-10">
-          <span className="text-[9px] text-slate-500 font-mono font-bold uppercase tracking-widest block mb-3 text-center">
-            Acoustic Isolation Soundscapes
-          </span>
-          <div className="flex flex-wrap justify-center gap-2">
-            {soundscapes.map(s => (
-              <button
-                key={s.id}
-                onClick={() => setSoundscape(s.id as any)}
-                className={`text-[10px] font-mono font-medium px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 ${
-                  soundscape === s.id
-                    ? "bg-[#7C6AF7]/10 text-[#7C6AF7] border-[#7C6AF7]/30"
-                    : "bg-[#0A0B0F] text-slate-400 border-[#1E2330] hover:border-slate-800"
-                }`}
-              >
-                <s.icon size={11} />
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
+
+
       </div>
 
       {/* Focus Sprints Milestones checks & AI Coaching instructions (Right) */}
