@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with authentication and system settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "An actionable execution item or study block",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "priority": { "type": "string" },
+        "status": { "type": "string" },
+        "deadline": { "type": "string" },
+        "estimatedMinutes": { "type": "number" },
+        "riskScore": { "type": "number" },
+        "riskLevel": { "type": "string" },
+        "riskReason": { "type": "string" },
+        "riskUpdatedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "completedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "Strategic long-term milestone",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "targetDate": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "AI Coach message history record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "sender": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "sender", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles store"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User custom tasks and subtasks"
+    },
+    "/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "User high-level milestones"
+    },
+    "/conversations/{messageId}": {
+      "schema": "Conversation",
+      "description": "Coaching message timeline"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "FlowMind AI",
+  "description": "An agentic productivity companion and task flow orchestrator.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
