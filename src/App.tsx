@@ -152,6 +152,32 @@ export default function App() {
         rec.onerror = (err: any) => {
           console.error("Speech recognition error:", err);
           setAudioListening(false);
+
+          if (err.error === "not-allowed") {
+            alert(
+              "Microphone access blocked or secure context required.\n\n" +
+              "To use speech input:\n" +
+              "1. Grant microphone permission in your browser settings.\n" +
+              "2. Ensure you are accessing the app over 'localhost' or a secure HTTPS connection.\n\n" +
+              "Falling back to text simulation."
+            );
+          } else if (err.error === "network") {
+            alert(
+              "Speech recognition network error.\n\n" +
+              "Google's speech recognition servers could not be reached. " +
+              "This happens if you are offline, behind a strict firewall, or your browser's speech service is restricted.\n\n" +
+              "Falling back to text simulation."
+            );
+          }
+
+          // Trigger fallback prompt on any Speech Recognition error
+          const mockResult = prompt(
+            `Voice Input Fallback (Speech Error: ${err.error ?? "unknown"}): Type verbal task request:`,
+            "schedule urgent DBMS performance audit pool limits Spanner by Friday at 6pm",
+          );
+          if (mockResult) {
+            handleVoiceResult(mockResult);
+          }
         };
 
         rec.onend = () => {

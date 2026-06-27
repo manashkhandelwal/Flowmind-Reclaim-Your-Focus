@@ -301,6 +301,11 @@ router.patch("/event/:eventId", async (req: Request, res: Response) => {
       return res.json({ success: true, event: updated });
     }
 
+    if (patchRes.status === 404 || patchRes.status === 410) {
+      console.log(`📆 Google Calendar — Event ${eventId} was deleted or not found (status ${patchRes.status}).`);
+      return res.status(patchRes.status).json({ success: false, error: "Event deleted or not found" });
+    }
+
     const txt = await patchRes.text();
     console.error(`  ✗ Calendar patch failed (${patchRes.status}):`, txt);
     return res.status(patchRes.status).json({ error: txt });

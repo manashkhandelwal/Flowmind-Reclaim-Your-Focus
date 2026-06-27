@@ -12,6 +12,23 @@ import {
 } from "firebase/firestore";
 import { Task, Goal, Message } from "../types";
 
+// Helper to remove undefined properties recursively before writing to Firestore
+function removeUndefined(obj: any): any {
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefined);
+  }
+  const clean: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      clean[key] = removeUndefined(obj[key]);
+    }
+  }
+  return clean;
+}
+
 // Setup typed Firestore helpers
 export async function saveUserToFirestore(
   uid: string,
@@ -21,14 +38,13 @@ export async function saveUserToFirestore(
     const userDocRef = doc(db, "users", uid);
     await setDoc(
       userDocRef,
-      {
+      removeUndefined({
         ...profile,
         uid,
         updatedAt: new Date().toISOString(),
-      },
+      }),
       { merge: true },
     );
-    console.log(`Firestore: Saved user profile for ${uid}`);
   } catch (err) {
     console.error("Firestore: Error saving user profile:", err);
   }
@@ -54,13 +70,12 @@ export async function saveTaskToFirestore(userId: string, task: Task) {
     const docRef = doc(db, "tasks", task.id);
     await setDoc(
       docRef,
-      {
+      removeUndefined({
         ...task,
         userId,
-      },
+      }),
       { merge: true },
     );
-    console.log(`Firestore: Saved task ${task.id}`);
   } catch (err) {
     console.error("Firestore: Error saving task:", err);
   }
@@ -95,10 +110,10 @@ export async function saveGoalToFirestore(userId: string, goal: Goal) {
     const docRef = doc(db, "goals", goal.id);
     await setDoc(
       docRef,
-      {
+      removeUndefined({
         ...goal,
         userId,
-      },
+      }),
       { merge: true },
     );
   } catch (err) {
@@ -135,10 +150,10 @@ export async function saveMessageToFirestore(userId: string, msg: Message) {
     const docRef = doc(db, "conversations", msg.id);
     await setDoc(
       docRef,
-      {
+      removeUndefined({
         ...msg,
         userId,
-      },
+      }),
       { merge: true },
     );
   } catch (err) {
@@ -183,7 +198,6 @@ export async function markOnboardingComplete(uid: string): Promise<void> {
   try {
     const userDocRef = doc(db, "users", uid);
     await setDoc(userDocRef, { onboardingCompleted: true }, { merge: true });
-    console.log(`Firestore: Onboarding marked complete for ${uid}`);
   } catch (err) {
     console.error("Firestore: Error marking onboarding complete:", err);
   }

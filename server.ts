@@ -16,6 +16,7 @@
 import "dotenv/config";
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 //import morgan from "morgan";
 
@@ -32,6 +33,12 @@ import calendarRouter from "./server/routes/calendar";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3000);
+
+// Set security headers to allow OAuth popups (Firebase Auth)
+app.use((_req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
 //app.use(morgan("dev"));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -60,11 +67,30 @@ async function startServer(): Promise<void> {
   } else {
     // Production: Serve compiled static assets
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { index: false }));
     app.get("*", (_req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const htmlPath = path.join(distPath, "index.html");
+      if (!fs.existsSync(htmlPath)) {
+        return res.status(404).send("Not found");
+      }
+      let html = fs.readFileSync(htmlPath, "utf8");
+
+      // Inject runtime environment variables securely
+      const envVars = {
+        VITE_FIREBASE_API_KEY: process.env.VITE_FIREBASE_API_KEY,
+        VITE_FIREBASE_AUTH_DOMAIN: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+        VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID,
+        VITE_FIREBASE_STORAGE_BUCKET: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+        VITE_FIREBASE_MESSAGING_SENDER_ID: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        VITE_FIREBASE_APP_ID: process.env.VITE_FIREBASE_APP_ID,
+        VITE_FIRESTORE_DATABASE_ID: process.env.VITE_FIRESTORE_DATABASE_ID,
+      };
+
+      const scriptTag = `<script>window.ENV = ${JSON.stringify(envVars)};</script>`;
+      html = html.replace("<head>", `<head>${scriptTag}`);
+      res.send(html);
     });
-    console.log("🚀 FlowMind: Serving production build.");
+    console.log("🚀 FlowMind: Serving production build with dynamic config injection.");
   }
 
   app.listen(PORT, () => {

@@ -294,7 +294,11 @@ export function useWorkspace(): UseWorkspaceReturn {
               existing?.deadline &&
               full.deadline !== existing.deadline
             ) {
-              await updateCalendarEvent(token, full.calendarEventId, full);
+              const success = await updateCalendarEvent(token, full.calendarEventId, full);
+              if (!success) {
+                full.calendarEventId = undefined;
+                full.calendarId = undefined;
+              }
             } else if (!full.calendarEventId && full.status !== "completed") {
               const calResult = await createCalendarEvent(token, full);
               if (calResult.status === "created") {

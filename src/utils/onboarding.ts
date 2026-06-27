@@ -123,7 +123,6 @@ export async function runFirstLoginOnboarding(
   uid: string,
   googleToken: string,
 ): Promise<Task[]> {
-  console.log("🎉 FlowMind: Running first-login onboarding for", uid);
   const tasks = buildOnboardingTasks(uid);
 
   for (const task of tasks) {
@@ -144,20 +143,11 @@ export async function runFirstLoginOnboarding(
         // Mutate local copy so returned array has correct IDs
         task.calendarEventId = calResult.eventId;
         task.calendarId = calResult.calendarId;
-        console.log(
-          `  ✓ Calendar event created for "${task.title}": ${calResult.eventId}`,
-        );
       }
-    } else {
-      console.warn(
-        "  ⚠ No Google token — skipping Calendar event for",
-        task.title,
-      );
     }
   }
 
   // 4. Mark onboarding complete
   await markOnboardingComplete(uid);
-  console.log("✅ FlowMind: Onboarding complete.");
   return tasks;
 }
