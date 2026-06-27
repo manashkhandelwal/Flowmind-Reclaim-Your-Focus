@@ -10,7 +10,7 @@
   •
   <a href="#architecture--technology-stack">Architecture</a>
   •
-  <a href="#core-features">Features</a>
+  <a href="#-core-features">Features</a>
 </p>
 
 <p align="center">
@@ -52,7 +52,7 @@ Traditional productivity apps rely on passive alerts that are easy to ignore. Fl
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## Architecture & Technology Stack
 
 FlowMind AI is designed as a secure, containerized, multi-agent workspace:
 
